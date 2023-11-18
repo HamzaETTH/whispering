@@ -40,6 +40,8 @@
 				"icons/32x32.png",
 				"icons/128x128.png",
 				"icons/128x128@2x.png",
+				"icons/128x128@2x_recording.png",
+				"icons/128x128@2x_transcribing.png",
 				"icons/icon.icns",
 				"icons/icon.ico"
 			],
@@ -63,6 +65,10 @@
 		},
 		"security": {
 			"csp": null
+		},
+		"systemTray": {
+			"iconPath": "icons/128x128@2x.png",
+			"iconAsTemplate": true
 		},
 		"updater": {
 			"active": false

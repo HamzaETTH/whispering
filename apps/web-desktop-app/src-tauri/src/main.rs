@@ -1,12 +1,48 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayEvent, Manager, WindowEvent};
+
 fn main() {
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    let tray_menu = SystemTrayMenu::new().add_item(quit);
+    let system_tray = SystemTray::new().with_menu(tray_menu);
+
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![convert_to_mp3, paste])
+        .system_tray(system_tray)
+        .on_system_tray_event(|app, event| match event {
+            SystemTrayEvent::MenuItemClick { id, .. } => {
+                if id == "quit" {
+                    std::process::exit(0);
+                }
+            }
+            SystemTrayEvent::LeftClick { .. } => {
+                let window = app.get_window("main").unwrap();
+                window.show().unwrap();
+                window.set_focus().unwrap();
+            }
+            _ => {}
+        })
+        .setup(|app| {
+            let window = app.get_window("main").unwrap();
+            let window_clone = window.clone(); // Clone the window handle
+
+            window.on_window_event(move |event| {
+                match event {
+                    WindowEvent::CloseRequested { api, .. } => {
+                        api.prevent_close(); // Prevents closing the app
+                        window_clone.hide().unwrap(); // Minimizes to tray using the cloned handle
+                    }
+                    _ => {}
+                }
+            });
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![convert_to_mp3, paste, set_tray_icon])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
 
 use std::process::Command;
 
@@ -34,4 +70,14 @@ fn paste() {
         enigo.key_click(Key::Layout('v'));
         enigo.key_up(Key::Control);
     }
+}
+
+#[tauri::command]
+fn set_tray_icon(app: tauri::AppHandle, state: String) {
+    let icon_bytes = match state.as_str() {
+        "recording" => include_bytes!("../icons/128x128@2x_recording.png").to_vec(),
+        "transcribing" => include_bytes!("../icons/128x128@2x_transcribing.png").to_vec(),
+        _ => include_bytes!("../icons/128x128@2x.png").to_vec(),
+    };
+    app.tray_handle().set_icon(tauri::Icon::Raw(icon_bytes)).unwrap();
 }

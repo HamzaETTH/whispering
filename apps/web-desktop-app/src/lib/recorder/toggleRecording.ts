@@ -8,6 +8,7 @@ import { transcribeAudioWithWhisperApi } from '$lib/transcribeAudioWithWhisperAp
 import toast from 'svelte-french-toast';
 import { get } from 'svelte/store';
 import { startRecording, stopRecording } from './mediaRecorder';
+import { invoke } from '@tauri-apps/api/tauri';
 
 export async function toggleRecording() {
 	const apiKeyValue = get(apiKey);
@@ -21,11 +22,20 @@ export async function toggleRecording() {
 		await setAlwaysOnTop(true);
 		await startRecording();
 		recordingState.set('recording');
+		(async () => {
+			while (get(recordingState) === 'recording') {
+				await invoke('set_tray_icon', { state: 'recording' });
+				await delay(500);
+				await invoke('set_tray_icon', { state: 'idle' });
+				await delay(500);
+			}
+		})();
 	} else {
 		try {
 			const audioBlob = await stopRecording();
 			audioSrc.set(URL.createObjectURL(audioBlob));
 			recordingState.set('transcribing');
+			await invoke('set_tray_icon', { state: 'transcribing' });
 			await toast.promise(processRecording(audioBlob), {
 				loading: 'Processing Whisper...',
 				success: 'Copied to clipboard!',
@@ -36,8 +46,13 @@ export async function toggleRecording() {
 		} finally {
 			await setAlwaysOnTop(false);
 			recordingState.set('idle');
+			await invoke('set_tray_icon', { state: 'idle' });
 		}
 	}
+}
+
+function delay(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function processRecording(audioBlob: Blob) {
