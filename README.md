@@ -38,6 +38,12 @@
   </a>
 </p>
 
+## Features in This Fork
+
+1. **Minimize to Tray**: The desktop application now minimizes to the system tray instead of exiting when closed. This allows the app to run unobtrusively in the background, ready for use without cluttering your desktop space. To fully close the application, right-click the tray icon and select "Quit".
+
+2. **Dynamic Tray Icon**: To provide a clear indication of when the app is recording, the tray icon changes to include a red circle. This dynamic icon alternates between the regular state and the recording state, offering a visual cue for the recording status.
+
 ---
 
 Whispering is an open-source project designed to streamline your voice-to-text experience by leveraging the OpenAI Whisper API.
